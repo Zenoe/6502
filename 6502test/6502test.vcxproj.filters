@@ -15,8 +15,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="6502test.cpp">
+    <ClCompile Include="M6502LoadRegTest.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="M6502StoreRegTest.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="M6502Test.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

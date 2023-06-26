@@ -2,7 +2,7 @@
 #include "gtest/gtest.h"
 #include "6502.h"
 using namespace m6502;
-class M6502Test1 : public testing::Test {
+class M6502LoadRegTest : public testing::Test {
 
 public:
     Mem mem;

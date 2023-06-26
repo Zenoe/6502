@@ -3,8 +3,9 @@
 #include "6502.h"
 
 using namespace std;
+using namespace m6502;
 
-int main(int argc, char* argv[]) {
+int test() {
 
     Mem mem;
     CPU cpu;
@@ -25,3 +26,8 @@ int main(int argc, char* argv[]) {
 
     return 0;
 }
+
+//int main(int argc, char* argv[]) {
+//    test();
+//    return 0;
+//}
