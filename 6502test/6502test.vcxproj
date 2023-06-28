@@ -130,6 +130,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="M6502JmpNCallTestcpp.cpp" />
     <ClCompile Include="M6502LoadRegTest.cpp" />
     <ClCompile Include="M6502StoreRegTest.cpp" />
   </ItemGroup>

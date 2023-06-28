@@ -26,17 +26,11 @@ struct m6502::Mem {
         // assert here address < MAX_MEM
         return Data[address];
     }
-
-    void WriteWord(s32& cycles, Word value, u32 addr) {
-        Data[addr] = value & 0xFF;
-        Data[addr + 1] = (value >> 8);
-        cycles -= 2;
-    }
 };
 
 struct m6502::CPU {
     Word PC;
-    Word SP;
+    Byte SP;
     Byte A, X, Y;
     Byte C : 1;
     Byte Z : 1;
@@ -45,14 +39,6 @@ struct m6502::CPU {
     Byte B : 1;
     Byte V : 1;
     Byte N : 1;
-
-    void Reset(Mem& mem);
-
-    Byte FetchByte(s32& cycles, const Mem& memory);
-    Word FetchWord(s32& cycles, const Mem& memory);
-    Byte ReadByte(s32& cycles, Word address,const Mem& memory);
-    Word ReadWord(s32& cycles, Word address,const Mem& memory);
-	void LDRegSetStatus(const Byte & effectedRegVal);
     // opcodes
     static constexpr Byte INS_LDA_IM = 0xA9;
     static constexpr Byte INS_LDA_ZP = 0xA5;
@@ -76,7 +62,6 @@ struct m6502::CPU {
     static constexpr Byte INS_LDY_ABS = 0xAC;
     static constexpr Byte INS_LDY_ABSX = 0xBC;
 
-    static constexpr Byte INS_JSR = 0x20;
     // store
     static constexpr Byte INS_STA_ZP = 0x85;
     static constexpr Byte INS_STA_ZPX = 0x95;
@@ -94,7 +79,21 @@ struct m6502::CPU {
     static constexpr Byte INS_STY_ZPX = 0x94;
     static constexpr Byte INS_STY_ABS = 0x8C;
 
-    //
+    static constexpr Byte INS_JSR = 0x20;
+    static constexpr Byte INS_RTS = 0x60;
+
+    void Reset(Mem& mem);
+    void Reset(Word ResetVector, Mem& memory);
+
+    Byte FetchByte(s32& cycles, const Mem& memory);
+    Word FetchWord(s32& cycles, const Mem& memory);
+    Byte ReadByte(s32& cycles, Word address,const Mem& memory);
+    Word ReadWord(s32& cycles, Word address,const Mem& memory);
+
+    void WriteByte(const Byte& regVal, const Word& addr, s32& cycles, Mem& memory);
+    void WriteWord(Word value, s32& cycles, Word addr, Mem& memory);
+
+	void LDRegSetStatus(const Byte & effectedRegVal);
 
     Word AddrZeroPage(s32& cycles, const Mem& memory);
     Word AddrZeroPageX(s32& cycles, const Mem& memory);
@@ -102,6 +101,22 @@ struct m6502::CPU {
     Word AddrAbs(s32& cycles, const Mem& memory);
     Word AddrAbsX(s32& cycles, const Mem& memory);
     Word AddrAbsY(s32& cycles, const Mem& memory);
+
+	// take 5 cycles
+    Word AddrAbsX_5(s32& cycles, const Mem& memory);
+    Word AddrAbsY_5(s32& cycles, const Mem& memory);
+    Word AddrIndirectX(s32& cycles, const Mem& memory);
+    Word AddrIndirectY(s32& cycles, const Mem& memory);
+    Word AddrIndirectY_6(s32& cycles, const Mem& memory);
+
+    // 6502 supports a 256 byte stack fixed btw memory locations $0100 and $01FF.
+    // a special reg SP is used to keep track of the next free byte of stack space.
+    // pushing a value on to the stack causes the value to be stored at the current location
+    // and then stack pointer is post decremented. Pull operations reverse this procedure
+    Word SPToAddress() const;
+    void PushWord2Stack(s32& cycles, Mem& memory, Word val);
+    void PushByte2Stack(s32& cycles, Mem& memory, Byte val);
+    Word PopWordFromStack(s32& cycles, Mem& memory);
     s32 Execute(s32 cycles, Mem& memory);
 
 };

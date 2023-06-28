@@ -95,7 +95,7 @@ void M6502StoreRegTest::TestSTAAbsX(Byte opCode, Byte CPU::*reg) {
     mem[0xFFFE] = 0x77;
     mem[0x7780] = 0x00;
     CPU cpuCopy = cpu;
-    constexpr s32 EXPECTCYCLES = 4;
+    constexpr s32 EXPECTCYCLES = 5;
     const s32 actualCycles = cpu.Execute(EXPECTCYCLES, mem);
 
     EXPECT_EQ(actualCycles, EXPECTCYCLES);
@@ -110,7 +110,7 @@ void M6502StoreRegTest::TestSTAAbsY(Byte opCode, Byte CPU::*reg) {
     mem[0xFFFE] = 0x77;
     mem[0x7780] = 0x00;
     CPU cpuCopy = cpu;
-    constexpr s32 EXPECTCYCLES = 4;
+    constexpr s32 EXPECTCYCLES = 5;
     const s32 actualCycles = cpu.Execute(EXPECTCYCLES, mem);
 
     EXPECT_EQ(actualCycles, EXPECTCYCLES);
@@ -119,6 +119,9 @@ void M6502StoreRegTest::TestSTAAbsY(Byte opCode, Byte CPU::*reg) {
 }
 TEST_F(M6502StoreRegTest, STA0Page) {
     TestStoreRegZP(CPU::INS_STA_ZP, &CPU::A);
+}
+TEST_F(M6502StoreRegTest, STA0PageX) {
+    TestStoreRegZPX(CPU::INS_STA_ZPX, &CPU::A);
 }
 //stx
 TEST_F(M6502StoreRegTest, STX0Page) {
@@ -166,7 +169,7 @@ TEST_F(M6502StoreRegTest, STAIndX) {
     const s32 actualCycles = cpu.Execute(EXPECTCYCLES, mem);
 
     EXPECT_EQ(actualCycles, EXPECTCYCLES);
-    EXPECT_EQ(mem[0x3377+0x04], 0x2F);
+    EXPECT_EQ(mem[0x3300], 0x2F);
     VerifyUnmodifiedFlagsFromLDA(cpu, cpuCopy);
 }
 TEST_F(M6502StoreRegTest, STAIndY) {
@@ -180,10 +183,10 @@ TEST_F(M6502StoreRegTest, STAIndY) {
     mem[0x0081] = 0x33;
     mem[0x3300+0x04] = 0x00;
     CPU cpuCopy = cpu;
-    constexpr s32 EXPECTCYCLES = 5;
+    constexpr s32 EXPECTCYCLES = 6;
     const s32 actualCycles = cpu.Execute(EXPECTCYCLES, mem);
 
     EXPECT_EQ(actualCycles, EXPECTCYCLES);
-    EXPECT_EQ(mem[0x3377+0x04], 0x2F);
+    EXPECT_EQ(mem[0x3300+0x04], 0x2F);
     VerifyUnmodifiedFlagsFromLDA(cpu, cpuCopy);
 }
