@@ -8,8 +8,7 @@ void CPU::Reset(Word ResetVector, Mem& memory)
 {
 	PC = ResetVector;
 	SP = 0xFF;// pushing to stack leads to SP decrement
-	C = I = Z = B = V = N = D = 0;
-	//Flag.C = Flag.Z = Flag.I = Flag.D = Flag.B = Flag.V = Flag.N = 0;
+	Flag.C = Flag.Z = Flag.I = Flag.D = Flag.B = Flag.V = Flag.N = 0;
 	A = X = Y = 0;
 	memory.Initialise();
 }
@@ -55,8 +54,8 @@ Word CPU::ReadWord(s32& cycles, Word address, const Mem& memory) {
 }
 
 void CPU::LDRegSetStatus(const Byte& effectedRegVal) {
-	Z = (effectedRegVal == 0);
-	N = (effectedRegVal & 0b10000000) > 0;
+	Flag.Z = (effectedRegVal == 0);
+	Flag.N = (effectedRegVal & 0b10000000) > 0;
 }
 
 Word CPU::AddrZeroPage(s32& cycles, const Mem& memory) {
@@ -155,6 +154,13 @@ Word CPU::PopWordFromStack(s32& cycles, Mem& memory) {
 	return retVal;
 }
 
+Byte CPU::PopByteFromStack(s32& cycles, Mem& memory) {
+	Byte retVal = ReadByte(cycles, SPToAddress() + 1, memory);
+	SP += 1;
+	cycles--;
+	return retVal;
+}
+
 void CPU::PushByte2Stack(s32& cycles, Mem& memory, Byte val) {
 	WriteByte(val, SPToAddress(), cycles, memory);
 	SP--;
@@ -180,14 +186,6 @@ s32 CPU::Execute(s32 cycles, Mem& memory) {
 		case INS_LDA_ZPX: {
 			Byte zeroPageAddr = AddrZeroPageX(cycles, memory);
 			LoadReg(zeroPageAddr, A);
-		}break;
-		case INS_JSR: {
-			Word subRoutineAddr = FetchWord(cycles, memory);
-			// pushes the address (minus one) of the return point on to the stack
-			// and then sets the program counter to the target memory address.
-			PushWord2Stack(cycles, memory, PC - 1);
-			PC = subRoutineAddr;
-			cycles--;
 		}break;
 		case INS_RTS: {
 			// return to the calling routine. it pulls the program counter(minus one) from the stack
@@ -309,6 +307,48 @@ s32 CPU::Execute(s32 cycles, Mem& memory) {
 			Word addr = AddrAbs(cycles, memory);
 			WriteByte(Y, addr, cycles, memory);
 		}break;
+		case INS_JSR: {
+			Word subRoutineAddr = FetchWord(cycles, memory);
+			// pushes the address (minus one) of the return point on to the stack
+			// and then sets the program counter to the target memory address.
+			PushWord2Stack(cycles, memory, PC - 1);
+			PC = subRoutineAddr;
+			cycles--;
+		}break;
+		case INS_JMP_ABS: {
+			Word subRoutineAddr = FetchWord(cycles, memory);
+			PC = subRoutineAddr;
+		}break;
+		case INS_JMP_IND: {
+			Word addr = FetchWord(cycles, memory);
+			PC = ReadWord(cycles, addr, memory);
+		}break;
+		case INS_TSX: {
+			X = SP;
+			cycles--;
+			LDRegSetStatus(X);
+		}break;
+		case INS_TXS: {
+			SP = X;
+			cycles--;
+
+		}break;
+		case INS_PHA: {
+			PushByte2Stack(cycles, memory, A);
+		}break;
+		case INS_PLA: {
+			A = PopByteFromStack(cycles, memory);
+			LDRegSetStatus(A);
+			cycles--;
+		}break;
+		case INS_PHP: {
+			PushByte2Stack(cycles, memory, PS);
+		}break;
+		case INS_PLP: {
+			PS = PopByteFromStack(cycles, memory);
+			cycles--;
+		}break;
+
 		default:
 			printf("unsupport ins: %d", Ins);
 			break;

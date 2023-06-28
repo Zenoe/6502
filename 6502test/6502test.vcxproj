@@ -132,6 +132,7 @@
   <ItemGroup>
     <ClCompile Include="M6502JmpNCallTestcpp.cpp" />
     <ClCompile Include="M6502LoadRegTest.cpp" />
+    <ClCompile Include="M6502StackOperationTest.cpp" />
     <ClCompile Include="M6502StoreRegTest.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -141,9 +142,6 @@
     <ProjectReference Include="..\gtestlib\gtestlib.vcxproj">
       <Project>{ce86c7b7-a31d-4b39-8532-f2bf9aea625a}</Project>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="M6502Test.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

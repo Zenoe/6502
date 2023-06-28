@@ -24,10 +24,8 @@
     <ClCompile Include="M6502JmpNCallTestcpp.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="M6502Test.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
+    <ClCompile Include="M6502StackOperationTest.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

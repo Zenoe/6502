@@ -22,13 +22,13 @@ public:
 };
 
 static void VerifyUnmodifiedFlagsFromLDA(const CPU& cpu, const CPU& cpuCopy) {
-    EXPECT_EQ(cpu.C, cpuCopy.C);
-    EXPECT_EQ(cpu.I, cpuCopy.I);
-    EXPECT_EQ(cpu.D, cpuCopy.D);
-    EXPECT_EQ(cpu.B, cpuCopy.B);
-    EXPECT_EQ(cpu.V, cpuCopy.V);
-    EXPECT_EQ(cpu.Z, cpuCopy.Z);
-    EXPECT_EQ(cpu.N, cpuCopy.N);
+    EXPECT_EQ(cpu.Flag.C, cpuCopy.Flag.C);
+    EXPECT_EQ(cpu.Flag.I, cpuCopy.Flag.I);
+    EXPECT_EQ(cpu.Flag.D, cpuCopy.Flag.D);
+    EXPECT_EQ(cpu.Flag.B, cpuCopy.Flag.B);
+    EXPECT_EQ(cpu.Flag.V, cpuCopy.Flag.V);
+    EXPECT_EQ(cpu.Flag.Z, cpuCopy.Flag.Z);
+    EXPECT_EQ(cpu.Flag.N, cpuCopy.Flag.N);
 }
 
 void M6502StoreRegTest::TestStoreRegZP(Byte opCode, Byte CPU::*reg) {
