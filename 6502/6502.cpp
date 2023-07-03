@@ -166,11 +166,31 @@ void CPU::PushByte2Stack(s32& cycles, Mem& memory, Byte val) {
 	SP--;
 }
 
+Word CPU::LoadProg(const Byte* program, u32 byteCount, Mem& memory) {
+	Word loadAddr = 0;
+	if (program) {
+		u32 byteIdx = 0;
+		Byte lo = program[byteIdx++];
+		Byte hi = program[byteIdx++];
+		loadAddr = lo | (hi << 8);
+		for (Word i = loadAddr; i < loadAddr+byteCount-2; i++)
+		{
+			//
+			memory[i] = program[byteIdx++];
+		}
+	}
+	return loadAddr;
+}
+
 s32 CPU::Execute(s32 cycles, Mem& memory) {
 	s32 cyclesRequested = cycles;
 	auto LoadReg = [&cycles, &memory, this](Word addr, Byte& regValue) {
 		regValue = ReadByte(cycles, addr, memory);
 		LDRegSetStatus(regValue);
+	};
+	auto LogicalOpA = [&cycles, &memory, this](Word addr, ELogicalOp logicalOp) {
+		A = DoLogicalOp(A, ReadByte(cycles, addr, memory), logicalOp);
+		LDRegSetStatus(A);
 	};
 	while (cycles > 0) {
 		Byte Ins = FetchByte(cycles, memory);
@@ -331,7 +351,6 @@ s32 CPU::Execute(s32 cycles, Mem& memory) {
 		case INS_TXS: {
 			SP = X;
 			cycles--;
-
 		}break;
 		case INS_PHA: {
 			PushByte2Stack(cycles, memory, A);
@@ -347,6 +366,381 @@ s32 CPU::Execute(s32 cycles, Mem& memory) {
 		case INS_PLP: {
 			PS = PopByteFromStack(cycles, memory);
 			cycles--;
+		}break;
+		case INS_AND_IM: {
+			A = A & FetchByte(cycles, memory);
+			LDRegSetStatus(A);
+		}break;
+		case INS_AND_ZP: {
+			Byte zeroPageAddr = FetchByte(cycles, memory);
+			LogicalOpA(zeroPageAddr, ELogicalOp::And);
+		}break;
+		case INS_AND_ZPX: {
+			Byte zeroPageAddrX = AddrZeroPageX(cycles, memory);
+			LogicalOpA(zeroPageAddrX, ELogicalOp::And);
+		}break;
+		case INS_AND_ABS: {
+			Word addr = AddrAbs(cycles, memory);
+			LogicalOpA(addr, ELogicalOp::And);
+		}break;
+		case INS_AND_ABSX: {
+			Word addr = AddrAbsX(cycles, memory);
+			LogicalOpA(addr, ELogicalOp::And);
+		}break;
+		case INS_AND_ABSY: {
+			Word addr = AddrAbsY(cycles, memory);
+			LogicalOpA(addr, ELogicalOp::And);
+		}break;
+		case INS_AND_INDX: {
+			Word addr = AddrIndirectX(cycles, memory);
+			LogicalOpA(addr, ELogicalOp::And);
+		}break;
+		case INS_AND_INDY: {
+			Word addr = AddrIndirectY(cycles, memory);
+			LogicalOpA(addr, ELogicalOp::And);
+		}break;
+
+		case INS_ORA_IM: {
+			A = DoLogicalOp( A , FetchByte(cycles, memory), ELogicalOp::Or);
+			LDRegSetStatus(A);
+		}break;
+		case INS_ORA_ZP: {
+			Byte zeroPageAddr = FetchByte(cycles, memory);
+			LogicalOpA(zeroPageAddr, ELogicalOp::Or);
+		}break;
+		case INS_ORA_ZPX: {
+			Byte zeroPageAddrX = AddrZeroPageX(cycles, memory);
+			LogicalOpA(zeroPageAddrX, ELogicalOp::Or);
+		}break;
+		case INS_ORA_ABS: {
+			Word addr = AddrAbs(cycles, memory);
+			LogicalOpA(addr, ELogicalOp::Or);
+		}break;
+		case INS_ORA_ABSX: {
+			Word addr = AddrAbsX(cycles, memory);
+			LogicalOpA(addr, ELogicalOp::Or);
+		}break;
+		case INS_ORA_ABSY: {
+			Word addr = AddrAbsY(cycles, memory);
+			LogicalOpA(addr, ELogicalOp::Or);
+		}break;
+		case INS_ORA_INDX: {
+			Word addr = AddrIndirectX(cycles, memory);
+			LogicalOpA(addr, ELogicalOp::Or);
+		}break;
+		case INS_ORA_INDY: {
+			Word addr = AddrIndirectY(cycles, memory);
+			LogicalOpA(addr, ELogicalOp::Or);
+		}break;
+
+		case INS_EOR_IM: {
+			A = DoLogicalOp( A , FetchByte(cycles, memory), ELogicalOp::Eor);
+			LDRegSetStatus(A);
+		}break;
+		case INS_EOR_ZP: {
+			Byte zeroPageAddr = FetchByte(cycles, memory);
+			LogicalOpA(zeroPageAddr, ELogicalOp::Eor);
+		}break;
+		case INS_EOR_ZPX: {
+			Byte zeroPageAddrX = AddrZeroPageX(cycles, memory);
+			LogicalOpA(zeroPageAddrX, ELogicalOp::Eor);
+		}break;
+		case INS_EOR_ABS: {
+			Word addr = AddrAbs(cycles, memory);
+			LogicalOpA(addr, ELogicalOp::Eor);
+		}break;
+		case INS_EOR_ABSX: {
+			Word addr = AddrAbsX(cycles, memory);
+			LogicalOpA(addr, ELogicalOp::Eor);
+		}break;
+		case INS_EOR_ABSY: {
+			Word addr = AddrAbsY(cycles, memory);
+			LogicalOpA(addr, ELogicalOp::Eor);
+		}break;
+		case INS_EOR_INDX: {
+			Word addr = AddrIndirectX(cycles, memory);
+			LogicalOpA(addr, ELogicalOp::Eor);
+		}break;
+		case INS_EOR_INDY: {
+			Word addr = AddrIndirectY(cycles, memory);
+			LogicalOpA(addr, ELogicalOp::Eor);
+		}break;
+
+		case INS_BIT_ZP: {
+			Byte addr = FetchByte(cycles, memory);
+			Byte val = ReadByte(cycles, addr, memory);
+			//bool bitTestResult = A & val;
+			Flag.Z = !(A & val);
+			Flag.N = (val & NegativeFlagBit) != 0;
+			Flag.V = (val & OverflowFlagBit) != 0;
+		}break;
+		case INS_BIT_ABS: {
+			Word addr = AddrAbs(cycles, memory);
+			Byte val = ReadByte(cycles, addr, memory);
+			Flag.Z = !(A & val);
+			Flag.N = (val & NegativeFlagBit) != 0;
+			Flag.V = (val & OverflowFlagBit) != 0;
+		}break;
+		case INS_TAX: {
+			X = A;
+			cycles--;
+			LDRegSetStatus(X);
+		}break;
+		case INS_TAY: {
+			Y = A;
+			cycles--;
+			LDRegSetStatus(Y);
+		}break;
+		case INS_TXA: {
+			A = X;
+			cycles--;
+			LDRegSetStatus(A);
+		}break;
+		case INS_TYA: {
+			A = Y;
+			cycles--;
+			LDRegSetStatus(A);
+		}break;
+
+		case INS_INX: {
+
+		}break;
+		case INS_INY: {
+
+		}break;
+		case INS_DEY: {
+
+		}break;
+		case INS_DEX: {
+
+		}break;
+		case INS_DEC_ZP: {
+
+		}break;
+		case INS_DEC_ZPX: {
+
+		}break;
+		case INS_DEC_ABS: {
+
+		}break;
+		case INS_DEC_ABSX: {
+
+		}break;
+		case INS_INC_ZP: {
+
+		}break;
+		case INS_INC_ZPX: {
+
+		}break;
+		case INS_INC_ABS: {
+
+		}break;
+		case INS_INC_ABSX: {
+
+		}break;
+		case INS_BEQ: {
+
+		}break;
+		case INS_BNE: {
+
+		}break;
+		case INS_BCS: {
+
+		}break;
+		case INS_BCC: {
+
+		}break;
+		case INS_BMI: {
+
+		}break;
+		case INS_BPL: {
+
+		}break;
+		case INS_BVC: {
+
+		}break;
+		case INS_BVS: {
+
+		}break;
+		case INS_CLC: {
+
+		}break;
+		case INS_SEC: {
+
+		}break;
+		case INS_CLD: {
+
+		}break;
+		case INS_SED: {
+
+		}break;
+		case INS_CLI: {
+
+		}break;
+		case INS_SEI: {
+
+		}break;
+		case INS_CLV: {
+
+		}break;
+		case INS_ADC: {
+
+		}break;
+		case INS_ADC_ZP: {
+
+		}break;
+		case INS_ADC_ZPX: {
+
+		}break;
+		case INS_ADC_ABS: {
+
+		}break;
+		case INS_ADC_ABSX: {
+
+		}break;
+		case INS_ADC_ABSY: {
+
+		}break;
+		case INS_ADC_INDX: {
+
+		}break;
+		case INS_ADC_INDY: {
+
+		}break;
+		case INS_SBC: {
+
+		}break;
+		case INS_SBC_ABS: {
+
+		}break;
+		case INS_SBC_ZP: {
+
+		}break;
+		case INS_SBC_ZPX: {
+
+		}break;
+		case INS_SBC_ABSX: {
+
+		}break;
+		case INS_SBC_ABSY: {
+
+		}break;
+		case INS_SBC_INDX: {
+
+		}break;
+		case INS_SBC_INDY: {
+
+		}break;
+		case INS_CMP: {
+
+		}break;
+		case INS_CMP_ZP: {
+
+		}break;
+		case INS_CMP_ZPX: {
+
+		}break;
+		case INS_CMP_ABS: {
+
+		}break;
+		case INS_CMP_ABSX: {
+
+		}break;
+		case INS_CMP_ABSY: {
+
+		}break;
+		case INS_CMP_INDX: {
+
+		}break;
+		case INS_CMP_INDY: {
+
+		}break;
+		case INS_CPX: {
+
+		}break;
+		case INS_CPY: {
+
+		}break;
+		case INS_CPX_ZP: {
+
+		}break;
+		case INS_CPY_ZP: {
+
+		}break;
+		case INS_CPX_ABS: {
+
+		}break;
+		case INS_CPY_ABS: {
+
+		}break;
+		case INS_ASL: {
+
+		}break;
+		case INS_ASL_ZP: {
+
+		}break;
+		case INS_ASL_ZPX: {
+
+		}break;
+		case INS_ASL_ABS: {
+
+		}break;
+		case INS_ASL_ABSX: {
+
+		}break;
+		case INS_LSR: {
+
+		}break;
+		case INS_LSR_ZP: {
+
+		}break;
+		case INS_LSR_ZPX: {
+
+		}break;
+		case INS_LSR_ABS: {
+
+		}break;
+		case INS_LSR_ABSX: {
+
+		}break;
+		case INS_ROL: {
+
+		}break;
+		case INS_ROL_ZP: {
+
+		}break;
+		case INS_ROL_ZPX: {
+
+		}break;
+		case INS_ROL_ABS: {
+
+		}break;
+		case INS_ROL_ABSX: {
+
+		}break;
+		case INS_ROR: {
+
+		}break;
+		case INS_ROR_ZP: {
+
+		}break;
+		case INS_ROR_ZPX: {
+
+		}break;
+		case INS_ROR_ABS: {
+
+		}break;
+		case INS_ROR_ABSX: {
+
+		}break;
+		case INS_NOP: {
+
+		}break;
+		case INS_BRK: {
+
+		}break;
+		case INS_RTI: {
+
 		}break;
 
 		default:

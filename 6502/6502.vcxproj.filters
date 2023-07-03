@@ -21,9 +21,15 @@
     <ClCompile Include="6502.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Util.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="6502.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Util.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

@@ -27,5 +27,14 @@
     <ClCompile Include="M6502StackOperationTest.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="M6502LogicOperationTest.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="M6502LoadProgTest.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="M6502TransferReg.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

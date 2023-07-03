@@ -21,9 +21,11 @@
   <ItemGroup>
     <ClCompile Include="6502.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="6502.h" />
+    <ClInclude Include="Util.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

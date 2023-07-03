@@ -1,15 +1,6 @@
-#pragma once
 #include <cmath>
 #include <stdio.h>
-namespace m6502 {
-	using Byte = unsigned char;
-	using Word = unsigned short;
-	using u32 = unsigned int;
-	using s32 = signed int;
-    struct Mem;
-    struct CPU;
-    struct StatusFlags;
-}
+#include "Util.h"
 struct m6502::Mem {
     static constexpr u32 MAX_MEM = 1024 * 64;
     Byte Data[MAX_MEM];
@@ -47,6 +38,15 @@ struct m6502::CPU {
         Byte PS;
         StatusFlags Flag;
     };
+
+	static constexpr Byte
+		NegativeFlagBit = 0b10000000,
+		OverflowFlagBit = 0b01000000,
+		BreakFlagBit = 0b000010000,
+		UnusedFlagBit = 0b000100000,
+		InterruptDisableFlagBit = 0b000000100,
+		ZeroBit = 0b00000001;
+
     // opcodes
 	static constexpr Byte
 		//LDA
@@ -277,6 +277,9 @@ struct m6502::CPU {
     void PushByte2Stack(s32& cycles, Mem& memory, Byte val);
     Word PopWordFromStack(s32& cycles, Mem& memory);
     Byte PopByteFromStack(s32& cycles, Mem& memory);
+
+	Word LoadProg(const Byte* program, u32 byteCount, Mem& memory);
+
     s32 Execute(s32 cycles, Mem& memory);
 
 };
