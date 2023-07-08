@@ -27,302 +27,148 @@ public:
 	}
 };
 
-TEST_F(M6502IncDecTest, TAXCanTransferANonNegativeNonZeroValue)
+TEST_F(M6502IncDecTest, INX0)
 {
-	// given:
-	using namespace m6502;
-	cpu.Reset(0xFF00, mem);
-	cpu.A = 0x42;
-	cpu.X = 0x32;
-	cpu.Flag.Z = true;
-	cpu.Flag.N = true;
-	mem[0xFF00] = CPU::INS_TAX;
-	constexpr s32 EXPECTED_CYCLES = 2;
-	CPU CPUCopy = cpu;
-
-	// when:
-	const s32 ActualCycles = cpu.Execute(EXPECTED_CYCLES, mem);
-
-	// then:
-	EXPECT_EQ(ActualCycles, EXPECTED_CYCLES);
-	EXPECT_EQ(cpu.A, 0x42);
-	EXPECT_EQ(cpu.X, 0x42);
-	EXPECT_FALSE(cpu.Flag.Z);
-	EXPECT_FALSE(cpu.Flag.N);
-	ExpectUnaffectedRegisters(CPUCopy);
-}
-
-TEST_F(M6502IncDecTest, TAXCanTransferANonNegativeZeroValue)
-{
-	// given:
-	using namespace m6502;
-	cpu.Reset(0xFF00, mem);
-	cpu.A = 0x0;
-	cpu.X = 0x32;
-	cpu.Flag.Z = false;
-	cpu.Flag.N = true;
-	mem[0xFF00] = CPU::INS_TAX;
-	constexpr s32 EXPECTED_CYCLES = 2;
-	CPU CPUCopy = cpu;
-
-	// when:
-	const s32 ActualCycles = cpu.Execute(EXPECTED_CYCLES, mem);
-
-	// then:
-	EXPECT_EQ(ActualCycles, EXPECTED_CYCLES);
-	EXPECT_EQ(cpu.A, 0x0);
-	EXPECT_EQ(cpu.X, 0x0);
-	EXPECT_TRUE(cpu.Flag.Z);
-	EXPECT_FALSE(cpu.Flag.N);
-	ExpectUnaffectedRegisters(CPUCopy);
-}
-
-TEST_F(M6502IncDecTest, TAXCanTransferANegativeValue)
-{
-	// given:
-	using namespace m6502;
-	cpu.Reset(0xFF00, mem);
-	cpu.A = 0b10001011;
-	cpu.X = 0x32;
-	cpu.Flag.Z = true;
-	cpu.Flag.N = false;
-	mem[0xFF00] = CPU::INS_TAX;
-	constexpr s32 EXPECTED_CYCLES = 2;
-	CPU CPUCopy = cpu;
-
-	// when:
-	const s32 ActualCycles = cpu.Execute(EXPECTED_CYCLES, mem);
-
-	// then:
-	EXPECT_EQ(ActualCycles, EXPECTED_CYCLES);
-	EXPECT_EQ(cpu.A, 0b10001011);
-	EXPECT_EQ(cpu.X, 0b10001011);
-	EXPECT_FALSE(cpu.Flag.Z);
-	EXPECT_TRUE(cpu.Flag.N);
-	ExpectUnaffectedRegisters(CPUCopy);
-}
-
-TEST_F(M6502IncDecTest, TAYCanTransferANonNegativeNonZeroValue)
-{
-	// given:
-	using namespace m6502;
-	cpu.Reset(0xFF00, mem);
-	cpu.A = 0x42;
-	cpu.Y = 0x32;
-	cpu.Flag.Z = true;
-	cpu.Flag.N = true;
-	mem[0xFF00] = CPU::INS_TAY;
-	constexpr s32 EXPECTED_CYCLES = 2;
-	CPU CPUCopy = cpu;
-
-	// when:
-	const s32 ActualCycles = cpu.Execute(EXPECTED_CYCLES, mem);
-
-	// then:
-	EXPECT_EQ(ActualCycles, EXPECTED_CYCLES);
-	EXPECT_EQ(cpu.A, 0x42);
-	EXPECT_EQ(cpu.Y, 0x42);
-	EXPECT_FALSE(cpu.Flag.Z);
-	EXPECT_FALSE(cpu.Flag.N);
-	ExpectUnaffectedRegisters(CPUCopy);
-}
-
-TEST_F(M6502IncDecTest, TAYCanTransferANonNegativeZeroValue)
-{
-	// given:
-	using namespace m6502;
-	cpu.Reset(0xFF00, mem);
-	cpu.A = 0x0;
-	cpu.Y = 0x32;
-	cpu.Flag.Z = false;
-	cpu.Flag.N = true;
-	mem[0xFF00] = CPU::INS_TAY;
-	constexpr s32 EXPECTED_CYCLES = 2;
-	CPU CPUCopy = cpu;
-
-	// when:
-	const s32 ActualCycles = cpu.Execute(EXPECTED_CYCLES, mem);
-
-	// then:
-	EXPECT_EQ(ActualCycles, EXPECTED_CYCLES);
-	EXPECT_EQ(cpu.A, 0x0);
-	EXPECT_EQ(cpu.Y, 0x0);
-	EXPECT_TRUE(cpu.Flag.Z);
-	EXPECT_FALSE(cpu.Flag.N);
-	ExpectUnaffectedRegisters(CPUCopy);
-}
-
-TEST_F(M6502IncDecTest, TAYCanTransferANegativeValue)
-{
-	// given:
-	using namespace m6502;
-	cpu.Reset(0xFF00, mem);
-	cpu.A = 0b10001011;
-	cpu.Y = 0x32;
-	cpu.Flag.Z = true;
-	cpu.Flag.N = false;
-	mem[0xFF00] = CPU::INS_TAY;
-	constexpr s32 EXPECTED_CYCLES = 2;
-	CPU CPUCopy = cpu;
-
-	// when:
-	const s32 ActualCycles = cpu.Execute(EXPECTED_CYCLES, mem);
-
-	// then:
-	EXPECT_EQ(ActualCycles, EXPECTED_CYCLES);
-	EXPECT_EQ(cpu.A, 0b10001011);
-	EXPECT_EQ(cpu.Y, 0b10001011);
-	EXPECT_FALSE(cpu.Flag.Z);
-	EXPECT_TRUE(cpu.Flag.N);
-	ExpectUnaffectedRegisters(CPUCopy);
-}
-
-TEST_F(M6502IncDecTest, TXACanTransferANonNegativeNonZeroValue)
-{
-	// given:
-	using namespace m6502;
-	cpu.Reset(0xFF00, mem);
-	cpu.X = 0x42;
-	cpu.A = 0x32;
-	cpu.Flag.Z = true;
-	cpu.Flag.N = true;
-	mem[0xFF00] = CPU::INS_TXA;
-	constexpr s32 EXPECTED_CYCLES = 2;
-	CPU CPUCopy = cpu;
-
-	// when:
-	const s32 ActualCycles = cpu.Execute(EXPECTED_CYCLES, mem);
-
-	// then:
-	EXPECT_EQ(ActualCycles, EXPECTED_CYCLES);
-	EXPECT_EQ(cpu.X, 0x42);
-	EXPECT_EQ(cpu.A, 0x42);
-	EXPECT_FALSE(cpu.Flag.Z);
-	EXPECT_FALSE(cpu.Flag.N);
-	ExpectUnaffectedRegisters(CPUCopy);
-}
-
-TEST_F(M6502IncDecTest, TXACanTransferANonNegativeZeroValue)
-{
-	// given:
 	using namespace m6502;
 	cpu.Reset(0xFF00, mem);
 	cpu.X = 0x0;
-	cpu.A = 0x32;
-	cpu.Flag.Z = false;
+	cpu.Flag.Z = true;
 	cpu.Flag.N = true;
-	mem[0xFF00] = CPU::INS_TXA;
+	mem[0xFF00] = CPU::INS_INX;
 	constexpr s32 EXPECTED_CYCLES = 2;
 	CPU CPUCopy = cpu;
-
-	// when:
 	const s32 ActualCycles = cpu.Execute(EXPECTED_CYCLES, mem);
 
-	// then:
+	EXPECT_EQ(ActualCycles, EXPECTED_CYCLES);
+	EXPECT_EQ(cpu.X, 0x01);
+	EXPECT_FALSE(cpu.Flag.Z);
+	EXPECT_FALSE(cpu.Flag.N);
+	ExpectUnaffectedRegisters(CPUCopy);
+}
+
+TEST_F(M6502IncDecTest, INX255)
+{
+	using namespace m6502;
+	cpu.Reset(0xFF00, mem);
+	cpu.X = 0xFF;
+	cpu.Flag.Z = true;
+	cpu.Flag.N = true;
+	mem[0xFF00] = CPU::INS_INX;
+	constexpr s32 EXPECTED_CYCLES = 2;
+	CPU CPUCopy = cpu;
+	const s32 ActualCycles = cpu.Execute(EXPECTED_CYCLES, mem);
+
 	EXPECT_EQ(ActualCycles, EXPECTED_CYCLES);
 	EXPECT_EQ(cpu.X, 0x0);
-	EXPECT_EQ(cpu.A, 0x0);
 	EXPECT_TRUE(cpu.Flag.Z);
 	EXPECT_FALSE(cpu.Flag.N);
 	ExpectUnaffectedRegisters(CPUCopy);
 }
-
-TEST_F(M6502IncDecTest, TXACanTransferANegativeValue)
+TEST_F(M6502IncDecTest, INXNegativeVal)
 {
-	// given:
 	using namespace m6502;
 	cpu.Reset(0xFF00, mem);
-	cpu.X = 0b10001011;
-	cpu.A = 0x32;
+	cpu.X = 0b10001000;
 	cpu.Flag.Z = true;
 	cpu.Flag.N = false;
-	mem[0xFF00] = CPU::INS_TXA;
+	mem[0xFF00] = CPU::INS_INX;
 	constexpr s32 EXPECTED_CYCLES = 2;
 	CPU CPUCopy = cpu;
-
-	// when:
 	const s32 ActualCycles = cpu.Execute(EXPECTED_CYCLES, mem);
 
-	// then:
 	EXPECT_EQ(ActualCycles, EXPECTED_CYCLES);
-	EXPECT_EQ(cpu.X, 0b10001011);
-	EXPECT_EQ(cpu.A, 0b10001011);
+	EXPECT_EQ(cpu.X, 0b10001001);
 	EXPECT_FALSE(cpu.Flag.Z);
 	EXPECT_TRUE(cpu.Flag.N);
 	ExpectUnaffectedRegisters(CPUCopy);
 }
 
-TEST_F(M6502IncDecTest, TYACanTransferANonNegativeNonZeroValue)
+TEST_F(M6502IncDecTest, DEX)
 {
-	// given:
-	using namespace m6502;
 	cpu.Reset(0xFF00, mem);
-	cpu.Y = 0x42;
-	cpu.A = 0x32;
-	cpu.Flag.Z = true;
-	cpu.Flag.N = true;
-	mem[0xFF00] = CPU::INS_TYA;
+	cpu.X = 0x0;
+	mem[0xFF00] = CPU::INS_DEX;
 	constexpr s32 EXPECTED_CYCLES = 2;
 	CPU CPUCopy = cpu;
-
-	// when:
 	const s32 ActualCycles = cpu.Execute(EXPECTED_CYCLES, mem);
 
-	// then:
 	EXPECT_EQ(ActualCycles, EXPECTED_CYCLES);
-	EXPECT_EQ(cpu.Y, 0x42);
-	EXPECT_EQ(cpu.A, 0x42);
-	EXPECT_FALSE(cpu.Flag.Z);
-	EXPECT_FALSE(cpu.Flag.N);
-	ExpectUnaffectedRegisters(CPUCopy);
-}
-
-TEST_F(M6502IncDecTest, TYACanTransferANonNegativeZeroValue)
-{
-	// given:
-	using namespace m6502;
-	cpu.Reset(0xFF00, mem);
-	cpu.Y = 0x0;
-	cpu.A = 0x32;
-	cpu.Flag.Z = false;
-	cpu.Flag.N = true;
-	mem[0xFF00] = CPU::INS_TYA;
-	constexpr s32 EXPECTED_CYCLES = 2;
-	CPU CPUCopy = cpu;
-
-	// when:
-	const s32 ActualCycles = cpu.Execute(EXPECTED_CYCLES, mem);
-
-	// then:
-	EXPECT_EQ(ActualCycles, EXPECTED_CYCLES);
-	EXPECT_EQ(cpu.Y, 0x0);
-	EXPECT_EQ(cpu.A, 0x0);
-	EXPECT_TRUE(cpu.Flag.Z);
-	EXPECT_FALSE(cpu.Flag.N);
-	ExpectUnaffectedRegisters(CPUCopy);
-}
-
-TEST_F(M6502IncDecTest, TYACanTransferANegativeValue)
-{
-	// given:
-	using namespace m6502;
-	cpu.Reset(0xFF00, mem);
-	cpu.Y = 0b10001011;
-	cpu.A = 0x32;
-	cpu.Flag.Z = true;
-	cpu.Flag.N = false;
-	mem[0xFF00] = CPU::INS_TYA;
-	constexpr s32 EXPECTED_CYCLES = 2;
-	CPU CPUCopy = cpu;
-
-	// when:
-	const s32 ActualCycles = cpu.Execute(EXPECTED_CYCLES, mem);
-
-	// then:
-	EXPECT_EQ(ActualCycles, EXPECTED_CYCLES);
-	EXPECT_EQ(cpu.Y, 0b10001011);
-	EXPECT_EQ(cpu.A, 0b10001011);
+	EXPECT_EQ(cpu.X, 0xFF);
 	EXPECT_FALSE(cpu.Flag.Z);
 	EXPECT_TRUE(cpu.Flag.N);
 	ExpectUnaffectedRegisters(CPUCopy);
 }
+
+TEST_F(M6502IncDecTest, INCZP)
+{
+	cpu.Reset(0xFF00, mem);
+	cpu.X = 0x0;
+	mem[0xFF00] = CPU::INS_INC_ZP;
+	mem[0xFF01] = 0x42;
+	mem[0x0042] = 0x67;
+	constexpr s32 EXPECTED_CYCLES = 5;
+	CPU CPUCopy = cpu;
+	const s32 ActualCycles = cpu.Execute(EXPECTED_CYCLES, mem);
+
+	EXPECT_EQ(ActualCycles, EXPECTED_CYCLES);
+	EXPECT_EQ(mem[0x0042], 0x68);
+	EXPECT_FALSE(cpu.Flag.Z);
+	EXPECT_FALSE(cpu.Flag.N);
+	ExpectUnaffectedRegisters(CPUCopy);
+}
+
+TEST_F(M6502IncDecTest, INCZPX)
+{
+	cpu.Reset(0xFF00, mem);
+	cpu.X = 0x02;
+	mem[0xFF00] = CPU::INS_INC_ZPX;
+	mem[0xFF01] = 0x42;
+	mem[0x0044] = 0x67;
+	constexpr s32 EXPECTED_CYCLES = 6;
+	CPU CPUCopy = cpu;
+	const s32 ActualCycles = cpu.Execute(EXPECTED_CYCLES, mem);
+
+	EXPECT_EQ(ActualCycles, EXPECTED_CYCLES);
+	EXPECT_EQ(mem[0x0044], 0x68);
+	EXPECT_FALSE(cpu.Flag.Z);
+	EXPECT_FALSE(cpu.Flag.N);
+	ExpectUnaffectedRegisters(CPUCopy);
+}
+
+TEST_F(M6502IncDecTest, INCABS)
+{
+	cpu.Reset(0xFF00, mem);
+	mem[0xFF00] = CPU::INS_INC_ABS;
+	mem[0xFF01] = 0x02;
+	mem[0xFF02] = 0x80;
+	mem[0x8002] = 0x67;
+	constexpr s32 EXPECTED_CYCLES = 6;
+	CPU CPUCopy = cpu;
+	const s32 ActualCycles = cpu.Execute(EXPECTED_CYCLES, mem);
+
+	EXPECT_EQ(ActualCycles, EXPECTED_CYCLES);
+	EXPECT_EQ(mem[0x8002], 0x68);
+	EXPECT_FALSE(cpu.Flag.Z);
+	EXPECT_FALSE(cpu.Flag.N);
+	ExpectUnaffectedRegisters(CPUCopy);
+}
+
+TEST_F(M6502IncDecTest, INCABSX)
+{
+	cpu.Reset(0xFF00, mem);
+	cpu.X = 0x02;
+	mem[0xFF00] = CPU::INS_INC_ABSX;
+	mem[0xFF01] = 0x02;
+	mem[0xFF02] = 0x80;
+	mem[0x8002+0x02] = 0x67;
+	constexpr s32 EXPECTED_CYCLES = 6;
+	CPU CPUCopy = cpu;
+	const s32 ActualCycles = cpu.Execute(EXPECTED_CYCLES, mem);
+
+	EXPECT_EQ(ActualCycles, EXPECTED_CYCLES);
+	EXPECT_EQ(mem[0x8002+0x02], 0x68);
+	EXPECT_FALSE(cpu.Flag.Z);
+	EXPECT_FALSE(cpu.Flag.N);
+	ExpectUnaffectedRegisters(CPUCopy);
+}
+

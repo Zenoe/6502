@@ -68,9 +68,9 @@ TEST_F(M6502StackOperationTest, PHP) {
     const s32 actualCycles = cpu.Execute(EXPECTCYCLES, mem);
 
     EXPECT_EQ(actualCycles, EXPECTCYCLES);
-    EXPECT_EQ(cpu.PS, cpuCopy.PS);
+    EXPECT_EQ(cpu.PS, cpuCopy.PS );
+    EXPECT_EQ(mem[cpu.SPToAddress() + 1], 0xCC | CPU::UnusedFlagBit | CPU::BreakFlagBit);
     EXPECT_EQ(cpu.SP, 0xFE);
-    EXPECT_EQ(mem[cpu.SPToAddress() + 1], cpu.PS);
 }
 // pull accumulator from stack
 TEST_F(M6502StackOperationTest, PLA) {

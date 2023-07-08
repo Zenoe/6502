@@ -130,10 +130,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="6502StatusFlagChangeTest.cpp" />
+    <ClCompile Include="M6502AddCarryTest.cpp" />
+    <ClCompile Include="M6502BranchTest.cpp" />
+    <ClCompile Include="M6502CmpTest.cpp" />
+    <ClCompile Include="M6502IncDecTest.cpp" />
     <ClCompile Include="M6502LoadProgTest.cpp" />
     <ClCompile Include="M6502LogicOperationTest.cpp" />
     <ClCompile Include="M6502JmpNCallTestcpp.cpp" />
     <ClCompile Include="M6502LoadRegTest.cpp" />
+    <ClCompile Include="M6502ShiftsTests.cpp" />
     <ClCompile Include="M6502StackOperationTest.cpp" />
     <ClCompile Include="M6502StoreRegTest.cpp" />
     <ClCompile Include="M6502TransferReg.cpp" />

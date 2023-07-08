@@ -19,6 +19,7 @@ Byte CPU::FetchByte(s32& cycles, const Mem& memory) {
 	cycles--;
 	return Data;
 }
+
 void CPU::WriteByte(const Byte& regVal, const Word& addr, s32& cycles, Mem& memory) {
 	memory[addr] = regVal;
 	cycles--;
@@ -175,7 +176,7 @@ Word CPU::LoadProg(const Byte* program, u32 byteCount, Mem& memory) {
 		loadAddr = lo | (hi << 8);
 		for (Word i = loadAddr; i < loadAddr+byteCount-2; i++)
 		{
-			//
+			// memcpy?
 			memory[i] = program[byteIdx++];
 		}
 	}
@@ -184,6 +185,12 @@ Word CPU::LoadProg(const Byte* program, u32 byteCount, Mem& memory) {
 
 s32 CPU::Execute(s32 cycles, Mem& memory) {
 	s32 cyclesRequested = cycles;
+	auto PushPSToStack = [&cycles, &memory, this]()
+	{
+		Byte PSStack = PS | BreakFlagBit | UnusedFlagBit;
+		PushByte2Stack(cycles, memory, PSStack);
+	};
+
 	auto LoadReg = [&cycles, &memory, this](Word addr, Byte& regValue) {
 		regValue = ReadByte(cycles, addr, memory);
 		LDRegSetStatus(regValue);
@@ -192,6 +199,83 @@ s32 CPU::Execute(s32 cycles, Mem& memory) {
 		A = DoLogicalOp(A, ReadByte(cycles, addr, memory), logicalOp);
 		LDRegSetStatus(A);
 	};
+	auto ADC = [&cycles, &memory, this](Byte operand) {
+		const bool sameSigned = !((A ^ operand) & NegativeFlagBit);
+		Byte oldA = A;
+		Word sum = A + operand + Flag.C;
+		A = sum & 0xFF;
+		LDRegSetStatus(A);
+		Flag.C = sum > 0xFF;
+		if (sameSigned) {
+			Byte sumResult = A;
+			// not same signed btw sumResult and operand
+			Flag.V = ((sumResult ^ operand) & NegativeFlagBit);
+		}
+		else {
+			Flag.V = false;
+		}
+	};
+	auto SBC = [&ADC](Byte operand) {
+		// set carry to be true
+		// A-B ==> A + (-B)
+		// -B = ~B + 1   (1 is added by setting carry bit true)
+		ADC(~operand);
+	};
+	auto BranchIf = [&cycles, &memory, this](bool expectValue, bool target) {
+		if (target == expectValue) {
+			s8 offset = static_cast<s8> (FetchByte(cycles, memory));
+			const Word oldPC = PC;
+			PC += offset;
+			cycles--;
+			if ((oldPC >> 8) != (PC >> 8)) {
+				cycles--;
+			}
+		}
+	};
+	auto RegCmp = [&cycles, &memory, this](Byte operand, Byte regVal) {
+		Byte res = regVal - operand;
+		//Flag.C = (res >= 0); // wrong! when the result of subtraction is negative, res is converted to unsigned int, that is > 0
+		Flag.C = (regVal >= operand);
+		Flag.Z = (res == 0);
+		Flag.N = ((res & NegativeFlagBit) > 0);
+	};
+	auto ASL = [&cycles, this](Byte Operand) -> Byte
+	{
+		Flag.C = (Operand & NegativeFlagBit) > 0;
+		Byte Result = Operand << 1;
+		LDRegSetStatus(Result);
+		cycles--;
+		return Result;
+	};
+	auto LSR = [&cycles, this](Byte Operand) -> Byte
+	{
+		Flag.C = (Operand & ZeroBit) > 0;
+		Byte Result = Operand >> 1;
+		LDRegSetStatus(Result);
+		cycles--;
+		return Result;
+	};
+	auto ROL = [&cycles, this](Byte operand)->Byte
+	{
+		Byte newBit0 = Flag.C ? ZeroBit : 0;
+		Flag.C = (operand & NegativeFlagBit) > 0;
+		Byte result = operand << 1;
+		result = result | newBit0;
+		cycles--;
+		LDRegSetStatus(result);
+		return result;
+	};
+	auto ROR = [&cycles, this](Byte operand)->Byte
+	{
+		Byte carry = Flag.C;
+		Flag.C = (operand & ZeroBit) > 0;
+		Byte result = operand >> 1;
+		result = result | (carry << 7);
+		LDRegSetStatus(result);
+		cycles--;
+		return result;
+	};
+
 	while (cycles > 0) {
 		Byte Ins = FetchByte(cycles, memory);
 		switch (Ins) {
@@ -211,7 +295,7 @@ s32 CPU::Execute(s32 cycles, Mem& memory) {
 			// return to the calling routine. it pulls the program counter(minus one) from the stack
 			Word popAddr = PopWordFromStack(cycles, memory);
 			PC = popAddr + 1;
-			cycles-=2;
+			cycles -= 2;
 		}break;
 		case INS_LDA_ABS: {
 			Word absAddr = AddrAbs(cycles, memory);
@@ -361,7 +445,8 @@ s32 CPU::Execute(s32 cycles, Mem& memory) {
 			cycles--;
 		}break;
 		case INS_PHP: {
-			PushByte2Stack(cycles, memory, PS);
+			// needs to set 4th,5th bit of status flag, which were documented in nes.dev
+			PushPSToStack();
 		}break;
 		case INS_PLP: {
 			PS = PopByteFromStack(cycles, memory);
@@ -503,241 +588,421 @@ s32 CPU::Execute(s32 cycles, Mem& memory) {
 		}break;
 
 		case INS_INX: {
-
+			X += 1;
+			cycles--;
+			LDRegSetStatus(X);
 		}break;
 		case INS_INY: {
-
+			Y += 1;
+			cycles--;
+			LDRegSetStatus(Y);
 		}break;
 		case INS_DEY: {
-
+			Y -= 1;
+			cycles--;
+			LDRegSetStatus(Y);
 		}break;
 		case INS_DEX: {
-
+			X -= 1;
+			cycles--;
+			LDRegSetStatus(X);
 		}break;
 		case INS_DEC_ZP: {
-
+			Word addr = AddrZeroPage(cycles, memory);
+			Byte val = ReadByte(cycles, addr, memory);
+			val--;
+			cycles--;
+			WriteByte(val, addr, cycles, memory);
+			LDRegSetStatus(val);
 		}break;
 		case INS_DEC_ZPX: {
-
+			Word addr = AddrZeroPageX(cycles, memory);
+			Byte val = ReadByte(cycles, addr, memory);
+			val--;
+			cycles--;
+			WriteByte(val, addr, cycles, memory);
+			LDRegSetStatus(val);
 		}break;
 		case INS_DEC_ABS: {
-
+			Word addr = AddrAbs(cycles, memory);
+			Byte val = ReadByte(cycles, addr, memory);
+			val--;
+			cycles--;
+			WriteByte(val, addr, cycles, memory);
+			LDRegSetStatus(val);
 		}break;
 		case INS_DEC_ABSX: {
-
+			Word addr = AddrAbsX(cycles, memory);
+			Byte val = ReadByte(cycles, addr, memory);
+			val--;
+			cycles--;
+			WriteByte(val, addr, cycles, memory);
+			LDRegSetStatus(val);
 		}break;
 		case INS_INC_ZP: {
-
+			Word addr = AddrZeroPage(cycles, memory);
+			Byte val = ReadByte(cycles, addr, memory);
+			val++;
+			cycles--;
+			WriteByte(val, addr, cycles, memory);
+			LDRegSetStatus(val);
 		}break;
 		case INS_INC_ZPX: {
-
+			Word addr = AddrZeroPageX(cycles, memory);
+			Byte val = ReadByte(cycles, addr, memory);
+			val++;
+			cycles--;
+			WriteByte(val, addr, cycles, memory);
+			LDRegSetStatus(val);
 		}break;
 		case INS_INC_ABS: {
-
+			Word addr = AddrAbs(cycles, memory);
+			Byte val = ReadByte(cycles, addr, memory);
+			val++;
+			cycles--;
+			WriteByte(val, addr, cycles, memory);
+			LDRegSetStatus(val);
 		}break;
 		case INS_INC_ABSX: {
-
+			Word addr = AddrAbsX(cycles, memory);
+			Byte val = ReadByte(cycles, addr, memory);
+			val++;
+			cycles--;
+			WriteByte(val, addr, cycles, memory);
+			LDRegSetStatus(val);
 		}break;
-		case INS_BEQ: {
 
+		case INS_BEQ: {
+			BranchIf(true, Flag.Z);
 		}break;
 		case INS_BNE: {
-
+			BranchIf(false, Flag.Z);
 		}break;
 		case INS_BCS: {
-
+			BranchIf(true, Flag.C);
 		}break;
 		case INS_BCC: {
-
+			BranchIf(false, Flag.C);
 		}break;
 		case INS_BMI: {
-
+			BranchIf(true, Flag.N);
 		}break;
 		case INS_BPL: {
-
+			BranchIf(false, Flag.N);
 		}break;
 		case INS_BVC: {
-
+			BranchIf(false, Flag.V);
 		}break;
 		case INS_BVS: {
-
+			BranchIf(true, Flag.V);
 		}break;
-		case INS_CLC: {
-
-		}break;
-		case INS_SEC: {
-
-		}break;
-		case INS_CLD: {
-
-		}break;
-		case INS_SED: {
-
-		}break;
-		case INS_CLI: {
-
-		}break;
-		case INS_SEI: {
-
-		}break;
-		case INS_CLV: {
-
-		}break;
+		case INS_CLC:
+		{
+			Flag.C = false;
+			cycles--;
+		} break;
+		case INS_SEC:
+		{
+			Flag.C = true;
+			cycles--;
+		} break;
+		case INS_CLD:
+		{
+			Flag.D = false;
+			cycles--;
+		} break;
+		case INS_SED:
+		{
+			Flag.D = true;
+			cycles--;
+		} break;
+		case INS_CLI:
+		{
+			Flag.I = false;
+			cycles--;
+		} break;
+		case INS_SEI:
+		{
+			Flag.I = true;
+			cycles--;
+		} break;
+		case INS_CLV:
+		{
+			Flag.V = false;
+			cycles--;
+		} break;
 		case INS_ADC: {
-
+			Byte operand = FetchByte(cycles, memory);
+			ADC(operand);
 		}break;
 		case INS_ADC_ZP: {
-
+			Word addr = AddrZeroPage(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			ADC(operand);
 		}break;
-		case INS_ADC_ZPX: {
-
-		}break;
-		case INS_ADC_ABS: {
-
-		}break;
-		case INS_ADC_ABSX: {
-
-		}break;
-		case INS_ADC_ABSY: {
-
-		}break;
-		case INS_ADC_INDX: {
-
-		}break;
-		case INS_ADC_INDY: {
-
-		}break;
-		case INS_SBC: {
-
-		}break;
-		case INS_SBC_ABS: {
-
-		}break;
-		case INS_SBC_ZP: {
-
-		}break;
-		case INS_SBC_ZPX: {
-
-		}break;
-		case INS_SBC_ABSX: {
-
-		}break;
-		case INS_SBC_ABSY: {
-
-		}break;
-		case INS_SBC_INDX: {
-
-		}break;
-		case INS_SBC_INDY: {
-
-		}break;
+		case INS_ADC_ABS:
+		{
+			Word Address = AddrAbs(cycles, memory);
+			Byte Operand = ReadByte(cycles, Address, memory);
+			ADC(Operand);
+		} break;
+		case INS_ADC_ABSX:
+		{
+			Word Address = AddrAbsX(cycles, memory);
+			Byte Operand = ReadByte(cycles, Address, memory);
+			ADC(Operand);
+		} break;
+		case INS_ADC_ABSY:
+		{
+			Word Address = AddrAbsY(cycles, memory);
+			Byte Operand = ReadByte(cycles, Address, memory);
+			ADC(Operand);
+		} break;
+		case INS_ADC_ZPX:
+		{
+			Word Address = AddrZeroPageX(cycles, memory);
+			Byte Operand = ReadByte(cycles, Address, memory);
+			ADC(Operand);
+		} break;
+		case INS_ADC_INDX:
+		{
+			Word Address = AddrIndirectX(cycles, memory);
+			Byte Operand = ReadByte(cycles, Address, memory);
+			ADC(Operand);
+		} break;
+		case INS_ADC_INDY:
+		{
+			Word Address = AddrIndirectY(cycles, memory);
+			Byte Operand = ReadByte(cycles, Address, memory);
+			ADC(Operand);
+		} break;
+		case INS_SBC:
+		{
+			Byte Operand = FetchByte(cycles, memory);
+			SBC(Operand);
+		} break;
+		case INS_SBC_ABS:
+		{
+			Word Address = AddrAbs(cycles, memory);
+			Byte Operand = ReadByte(cycles, Address, memory);
+			SBC(Operand);
+		} break;
+		case INS_SBC_ZP:
+		{
+			Word Address = AddrZeroPage(cycles, memory);
+			Byte Operand = ReadByte(cycles, Address, memory);
+			SBC(Operand);
+		} break;
+		case INS_SBC_ZPX:
+		{
+			Word Address = AddrZeroPageX(cycles, memory);
+			Byte Operand = ReadByte(cycles, Address, memory);
+			SBC(Operand);
+		} break;
+		case INS_SBC_ABSX:
+		{
+			Word Address = AddrAbsX(cycles, memory);
+			Byte Operand = ReadByte(cycles, Address, memory);
+			SBC(Operand);
+		} break;
+		case INS_SBC_ABSY:
+		{
+			Word Address = AddrAbsY(cycles, memory);
+			Byte Operand = ReadByte(cycles, Address, memory);
+			SBC(Operand);
+		} break;
+		case INS_SBC_INDX:
+		{
+			Word Address = AddrIndirectX(cycles, memory);
+			Byte Operand = ReadByte(cycles, Address, memory);
+			SBC(Operand);
+		} break;
+		case INS_SBC_INDY:
+		{
+			Word Address = AddrIndirectY(cycles, memory);
+			Byte Operand = ReadByte(cycles, Address, memory);
+			SBC(Operand);
+		} break;
 		case INS_CMP: {
-
+			Byte operand = FetchByte(cycles, memory);
+			RegCmp(operand, A);
 		}break;
 		case INS_CMP_ZP: {
-
+			Word addr = AddrZeroPage(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			RegCmp(operand, A);
 		}break;
 		case INS_CMP_ZPX: {
-
+			Word addr = AddrZeroPageX(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			RegCmp(operand, A);
 		}break;
 		case INS_CMP_ABS: {
-
+			Word addr = AddrAbs(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			RegCmp(operand, A);
 		}break;
 		case INS_CMP_ABSX: {
-
+			Word addr = AddrAbsX(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			RegCmp(operand, A);
 		}break;
 		case INS_CMP_ABSY: {
-
+			Word addr = AddrAbsY(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			RegCmp(operand, A);
 		}break;
 		case INS_CMP_INDX: {
-
+			Word addr = AddrIndirectX(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			RegCmp(operand, A);
 		}break;
 		case INS_CMP_INDY: {
-
+			Word addr = AddrIndirectY(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			RegCmp(operand, A);
 		}break;
 		case INS_CPX: {
-
+			Byte operand = FetchByte(cycles, memory);
+			RegCmp(operand, X);
 		}break;
 		case INS_CPY: {
-
+			Byte operand = FetchByte(cycles, memory);
+			RegCmp(operand, Y);
 		}break;
 		case INS_CPX_ZP: {
-
+			Word addr = AddrZeroPage(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			RegCmp(operand, X);
 		}break;
 		case INS_CPY_ZP: {
-
+			Word addr = AddrZeroPage(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			RegCmp(operand, Y);
 		}break;
 		case INS_CPX_ABS: {
-
+			Word addr = AddrAbs(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			RegCmp(operand, X);
 		}break;
 		case INS_CPY_ABS: {
-
+			Word addr = AddrAbs(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			RegCmp(operand, Y);
 		}break;
 		case INS_ASL: {
-
+			A = ASL(A);
 		}break;
 		case INS_ASL_ZP: {
-
+			Word addr = AddrZeroPage(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			Byte result = ASL(operand);
+			WriteByte(result, addr, cycles, memory);
 		}break;
 		case INS_ASL_ZPX: {
-
+			Word addr = AddrZeroPageX(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			Byte result = ASL(operand);
+			WriteByte(result, addr, cycles, memory);
 		}break;
 		case INS_ASL_ABS: {
-
+			Word addr = AddrAbs(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			Byte result = ASL(operand);
+			WriteByte(result, addr, cycles, memory);
 		}break;
 		case INS_ASL_ABSX: {
-
+			Word addr = AddrAbsX_5(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			Byte result = ASL(operand);
+			WriteByte(result, addr, cycles, memory);
 		}break;
 		case INS_LSR: {
-
+			A = LSR(A);
 		}break;
 		case INS_LSR_ZP: {
-
+			Word addr = AddrZeroPage(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			Byte result = LSR(operand);
+			WriteByte(result, addr, cycles, memory);
 		}break;
 		case INS_LSR_ZPX: {
-
+			Word addr = AddrZeroPageX(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			Byte result = LSR(operand);
+			WriteByte(result, addr, cycles, memory);
 		}break;
 		case INS_LSR_ABS: {
-
+			Word addr = AddrAbs(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			Byte result = LSR(operand);
+			WriteByte(result, addr, cycles, memory);
 		}break;
 		case INS_LSR_ABSX: {
-
+			Word addr = AddrAbsX_5(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			Byte result = LSR(operand);
+			WriteByte(result, addr, cycles, memory);
 		}break;
 		case INS_ROL: {
-
+			A = ROL(A);
 		}break;
 		case INS_ROL_ZP: {
-
+			Word addr = AddrZeroPage(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			Byte result = ROL(operand);
+			WriteByte(result, addr, cycles, memory);
 		}break;
 		case INS_ROL_ZPX: {
-
+			Word addr = AddrZeroPageX(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			Byte result = ROL(operand);
+			WriteByte(result, addr, cycles, memory);
 		}break;
 		case INS_ROL_ABS: {
-
+			Word addr = AddrAbs(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			Byte result = ROL(operand);
+			WriteByte(result, addr, cycles, memory);
 		}break;
 		case INS_ROL_ABSX: {
-
+			Word addr = AddrAbsX_5(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			Byte result = ROL(operand);
+			WriteByte(result, addr, cycles, memory);
 		}break;
 		case INS_ROR: {
-
+			A = ROR(A);
 		}break;
 		case INS_ROR_ZP: {
-
+			Word addr = AddrZeroPage(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			Byte result = ROR(operand);
+			WriteByte(result, addr, cycles, memory);
 		}break;
 		case INS_ROR_ZPX: {
-
+			Word addr = AddrZeroPageX(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			Byte result = ROR(operand);
+			WriteByte(result, addr, cycles, memory);
 		}break;
 		case INS_ROR_ABS: {
-
+			Word addr = AddrAbs(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			Byte result = ROR(operand);
+			WriteByte(result, addr, cycles, memory);
 		}break;
 		case INS_ROR_ABSX: {
-
+			Word addr = AddrAbsX_5(cycles, memory);
+			Byte operand = ReadByte(cycles, addr, memory);
+			Byte result = ROR(operand);
+			WriteByte(result, addr, cycles, memory);
 		}break;
 		case INS_NOP: {
-
+			cycles--;
 		}break;
 		case INS_BRK: {
-
+			//PushWord2Stack(cycles, memory, PC - 1);
 		}break;
 		case INS_RTI: {
 

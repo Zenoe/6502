@@ -36,5 +36,23 @@
     <ClCompile Include="M6502TransferReg.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="M6502IncDecTest.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="M6502BranchTest.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="6502StatusFlagChangeTest.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="M6502AddCarryTest.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="M6502CmpTest.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="M6502ShiftsTests.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

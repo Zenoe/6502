@@ -33,7 +33,7 @@ struct m6502::StatusFlags{
 struct m6502::CPU {
     Word PC;
     Byte SP;
-    Byte A, X, Y;
+    Byte A, X, Y;  // fixme: is register unsigned char or char
     union {
         Byte PS;
         StatusFlags Flag;
