@@ -54,3 +54,28 @@ TEST_F(M6502LoadProgTest, TestLoadProgramAProgramAndExecuteIt)
         Clock -= cpu.Execute(1, mem);
     }
 }
+
+TEST_F(M6502LoadProgTest, LoadThe6502TestPrg)
+{
+// ./as65.exe -l -m -w -h0 6502_functional_test.a65
+//#if 0
+    // given:
+    using namespace m6502;
+
+    // when:
+    FILE* fp;
+    fopen_s(&fp,
+        "6502_functional_test.bin", "rb");
+
+    fread(&mem[0x000A], 1, 65526, fp);
+    fclose(fp);
+
+    cpu.PC = 0x400;
+
+    //then:
+    while (true)
+    {
+        cpu.Execute(1, mem);
+    }
+//#endif
+}

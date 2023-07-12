@@ -281,5 +281,10 @@ struct m6502::CPU {
 	Word LoadProg(const Byte* program, u32 byteCount, Mem& memory);
 
     s32 Execute(s32 cycles, Mem& memory);
+	char FetchSByte(s32& Cycles, const Mem& memory)
+	{
+		return FetchByte(Cycles, memory);
+	}
+
 
 };

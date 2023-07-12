@@ -54,5 +54,8 @@
     <ClCompile Include="M6502ShiftsTests.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="6502SystemFunctionsTests.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

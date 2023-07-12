@@ -165,6 +165,7 @@ Byte CPU::PopByteFromStack(s32& cycles, Mem& memory) {
 void CPU::PushByte2Stack(s32& cycles, Mem& memory, Byte val) {
 	WriteByte(val, SPToAddress(), cycles, memory);
 	SP--;
+	cycles--;
 }
 
 Word CPU::LoadProg(const Byte* program, u32 byteCount, Mem& memory) {
@@ -189,6 +190,12 @@ s32 CPU::Execute(s32 cycles, Mem& memory) {
 	{
 		Byte PSStack = PS | BreakFlagBit | UnusedFlagBit;
 		PushByte2Stack(cycles, memory, PSStack);
+	};
+	auto PopPSFromStack = [&cycles, &memory, this]()
+	{
+		PS = PopByteFromStack(cycles, memory);
+		Flag.B = false;
+		Flag.Unused = false;
 	};
 
 	auto LoadReg = [&cycles, &memory, this](Word addr, Byte& regValue) {
@@ -222,8 +229,8 @@ s32 CPU::Execute(s32 cycles, Mem& memory) {
 		ADC(~operand);
 	};
 	auto BranchIf = [&cycles, &memory, this](bool expectValue, bool target) {
+		s8 offset = static_cast<s8> (FetchByte(cycles, memory));
 		if (target == expectValue) {
-			s8 offset = static_cast<s8> (FetchByte(cycles, memory));
 			const Word oldPC = PC;
 			PC += offset;
 			cycles--;
@@ -438,6 +445,7 @@ s32 CPU::Execute(s32 cycles, Mem& memory) {
 		}break;
 		case INS_PHA: {
 			PushByte2Stack(cycles, memory, A);
+			cycles--;
 		}break;
 		case INS_PLA: {
 			A = PopByteFromStack(cycles, memory);
@@ -447,9 +455,10 @@ s32 CPU::Execute(s32 cycles, Mem& memory) {
 		case INS_PHP: {
 			// needs to set 4th,5th bit of status flag, which were documented in nes.dev
 			PushPSToStack();
+			cycles--;
 		}break;
 		case INS_PLP: {
-			PS = PopByteFromStack(cycles, memory);
+			PopPSFromStack();
 			cycles--;
 		}break;
 		case INS_AND_IM: {
@@ -1002,10 +1011,17 @@ s32 CPU::Execute(s32 cycles, Mem& memory) {
 			cycles--;
 		}break;
 		case INS_BRK: {
-			//PushWord2Stack(cycles, memory, PC - 1);
+			// BRK: PC adds 2 instead of 1
+			PushWord2Stack(cycles, memory, PC + 1);
+			PushPSToStack();
+			constexpr Word interruptVector = 0xFFFE;
+			PC = ReadWord(cycles, interruptVector, memory);
+			Flag.B = true;
+			Flag.I = true;
 		}break;
 		case INS_RTI: {
-
+			PopPSFromStack();
+			PC = PopWordFromStack(cycles, memory);
 		}break;
 
 		default:

@@ -9,9 +9,7 @@ public:
         cpu.Reset(mem );
     }
     virtual void TearDown() {
-
     }
-
 //    void TestStoreRegZP(Byte opCode, Byte CPU::*Reg );
 };
 

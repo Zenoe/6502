@@ -131,6 +131,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="6502StatusFlagChangeTest.cpp" />
+    <ClCompile Include="6502SystemFunctionsTests.cpp" />
     <ClCompile Include="M6502AddCarryTest.cpp" />
     <ClCompile Include="M6502BranchTest.cpp" />
     <ClCompile Include="M6502CmpTest.cpp" />
